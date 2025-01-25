@@ -1,0 +1,786 @@
+#mem map 0-7
+#0 INDF(read indirect content)
+#1 TMR0(unimpl)
+#2 PCL
+#3 STATUS
+#4 FSR(only lower 5 bits are real ???)
+#5 OSCCAL(unimpl)
+#6 GPIO(pins yay)
+#7 unimpl(CMCON0)
+#N/A TRISGPIO(W ONLY???)
+#N/A OPTION(unimpl)
+
+#INSTRUCTION SET SUMMARY
+#ADDWF v
+#ANDWF v
+#CLRF v
+#CLRW v
+#COMF v
+#DECF v
+#DECFSZ v
+#INCF v
+#INCFSZ v
+#IORWF v
+#MOVF v
+#MOVWF v
+#NOP(0x000) v
+#RLF v
+#RRF v
+#SUBWF v
+#SWAPF v
+#XORWF v
+#BCF v
+#BSF v
+#BTFSC v
+#BTFSS v
+#ANDLW v
+#CALL v
+#GOTO v
+#IORLW v
+#MOVLW v
+#RETLW v
+#TRIS(0000 0000 0110) v
+#XORLW v
+#completed:30
+#to be done:0
+setrate 1000
+set pc 0
+set alock 0
+set w 0
+set gpwuf 0
+set z 0
+set c 0
+set dc 0
+set gpiomask 0xf
+set gpio 0
+set 
+mloop:
+op add callback @counter 1
+jump fetchinstrs always
+op and top instr 0xf00
+op shr top top 8
+op add instrcallback @counter 1
+jump instrexec always
+set tgpiomsk gpiomask
+set tgpio gpio
+set i 0
+gpiooutloop:
+op and tm tgpiomsk 1
+op and tp tgpio 1
+jump skipgpmask equal tm 1
+getlink b i
+control enabled b tp
+skipgpmask:
+op shr tgpio tgpio 1
+op shr tgpiomsk tgpiomsk 1
+op add i i 1
+jump gpiooutloop lessThan i 3
+op add pc pc 1
+jump mloop always
+instrexec:
+op and litr instr 0xff
+op and reg instr 0x1f
+op and d 0x20
+jump goto equal top 0b1010
+jump goto equal top 0b1011
+jump bcf equal top 0b0100
+jump bsf equal top 0b0101
+jump btfsc equal top 0b0110
+jump btfss equal top 0b0111
+jump andlw equal top 0b1110
+jump call equal top 0b1001
+jump iorlw equal top 0b1101
+jump movlw equal top 0b1100
+jump retlw equal top 0b1000
+jump xorlw equal top 0b1111
+op and d instr 0x20
+op and top6 instr 0xfc0
+op shr top6 top6 6
+jump addwf equal top6 0b000111
+jump andwf equal top6 0b000101
+jump clrfw equal top6 0b000001
+jump comf equal top6 0b001001
+jump decf equal top6 0b000011
+jump decfsz equal top6 0b001011
+jump incf equal top6 0b001010
+jump incfsz equal top6 0b001111
+jump iorwf equal top6 0b000100
+jump movf equal top6 0b001000
+jump tris equal instr 0b000000000110
+jump movwfnop equal top6 0b000000
+jump rlf equal top6 0b001101
+jump rrf equal top6 0b001100
+jump subwf equal top6 0b000010
+jump swapf equal top6 0b001110
+jump xorwf equal top6 0b000110
+set @counter instrcallback
+xorwf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op xor val val w
+op equal z val 0
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+swapf:
+op add callback @counter 1
+jump fetchreg always
+op and n2 val 0xf0
+op and n1 val 0xf
+op shr n2 n2 4
+op shl n1 n1 4
+op or val n2 n1
+op add callback @counter 1
+jump dwrite always
+set @counter instrcallback
+subwf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op xor adder w 0xff
+op add adder adder 1
+op and adder adder 0xff
+op and l4a adder 0xf
+op add _r adder val
+op and val _r 0xff
+op and l4r val 0xf
+op lessThan dc l4r l4a
+op greaterThan c _r val
+op equal z val 0
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+rrf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op shr _val val 1
+op shl _tmp c 7
+op and c val 1
+op or val _val _tmp
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+rlf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op shl _val val 1
+op or _val _val c
+op and c val 0x80
+op shr c c 7
+set val _val
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+tris:
+op and gpiomask w 0b111
+set @counter instrcallback
+movwfnop:
+set val w
+op add callback @counter 1
+jump dwrite always
+set @counter instrcallback
+movf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op equal z val 0
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+iorwf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op or val val w
+op equal z val 0
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+incfsz:
+op add callback @counter 1
+jump fetchreg always
+op add val val 1
+op and val val 0xff
+op equal zs val 0
+op add pc pc zs
+op add callback @counter 1
+jump dwrite always
+set @counter instrcallback
+incf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op add val val 1
+op and val val 0xff
+op equal z val 0
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+comf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op xor val val 0xff
+op equal z val 0
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+decfsz:
+op add callback @counter 1
+jump fetchreg always
+op add val val 255
+op and val val 0xff
+op equal zs val 0
+op add pc pc zs
+op add callback @counter 1
+jump dwrite always
+set @counter instrcallback
+decf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op add val val 255
+op and val val 0xff
+op equal z val 0
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+clrfw:
+set alock 1
+set val 0
+set z 1
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+andwf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op and val val w
+op equal z val 0
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+addwf:
+set alock 1
+op add callback @counter 1
+jump fetchreg always
+op and l4a w 0xf
+op add _r w val
+op and val _r 0xff
+op and l4r val 0xf
+op lessThan dc l4r l4a
+op greaterThan c _r val
+op equal z val 0
+op add callback @counter 1
+jump dwrite always
+set alock 0
+set @counter instrcallback
+goto:
+op and dest instr 0x1ff
+op sub pc dest 1
+set @counter instrcallback
+bcf:
+op and bit instr 0xe0
+op shr bit bit 5
+op shl bit 1 bit
+op xor bit bit 0xff
+op add callback @counter 1
+jump fetchreg always
+op and val val bit
+op add callback @counter 1
+jump writereg always
+set @counter instrcallback
+bsf:
+op and bit instr 0xe0
+op shr bit bit 5
+op shl bit 1 bit
+op add callback @counter 1
+jump fetchreg always
+op or val val bit
+op add callback @counter 1
+jump writereg always
+set @counter instrcallback
+btfsc:
+op and bit instr 0xe0
+op shr bit bit 5
+op shl bit 1 bit
+op add callback @counter 1
+jump fetchreg always
+op and val val bit
+op equal skip val 0
+op add pc pc skip
+set @counter instrcallback
+btfss:
+op and bit instr 0xe0
+op shr bit bit 5
+op shl bit 1 bit
+op add callback @counter 1
+jump fetchreg always
+op and val val bit
+op notEqual skip val 0
+op add pc pc skip
+set @counter instrcallback
+andlw:
+op and w w litr
+op equal z w 0
+set @counter instrcallback
+call:
+set s2 s1
+op add s1 pc 1
+op sub pc litr 1
+set @counter instrcallback
+iorlw:
+op or w w litr
+op equal z w 0
+set @counter instrcallback
+movlw:
+set w litr
+set @counter instrcallback
+retlw:
+set w litr
+set pc s1
+set s1 s2
+set @counter instrcallback
+xorlw:
+op xor w w litr
+op equal z w 0
+set @counter instrcallback
+dwrite:
+jump dwritemem notEqual d 0
+set w val
+set @counter callback
+dwritemem:
+jump writereg always
+fetchreg:
+op equal fsru reg 0
+jump fsruntrd equal fsru 0
+set addr fsr
+jump fsrundrd always
+fsruntrd:
+set addr reg
+fsrundrd:
+jump readmem always
+readmem:
+jump readunimpl equal addr 0
+jump readunimpl equal addr 1
+jump readunimpl equal addr 5
+jump readunimpl equal addr 7
+jump notpclread notEqual addr 2
+op and val pc 0xff
+set @counter callback
+notpclread:
+jump notstatusread notEqual addr 3
+set val c
+op shl _tmp dc 1
+op or val val _tmp
+op shl _tmp z 2
+op or val val _tmp
+op or val val 0b11000
+op shr _tmp gpwuf 7
+op or val val _tmp
+set @counter callback
+notstatusread:
+jump notfsrread notEqual addr 4
+op or val 0xe0 fsr
+set @counter callback
+notfsrread:
+jump notgpioread notEqual addr 6
+set val 0
+set i 0
+gpiogetloop:
+getlink p i
+sensor e p @enabled
+op shl b e i
+op or val b val
+op add i i 1
+jump gpiogetloop lessThan i 4
+set @counter callback
+notgpioread:
+op sub i addr 8
+op idiv dsb i 6
+set bcallback callback
+op add callback @counter 1
+jump readgen always
+set callback bcallback
+op mod wrd i 6
+op mul shift wrd 8
+op shr val ds shift
+op and val val 0xff
+set @counter callback
+readunimpl:
+set val 0
+set @counter callback
+readgen:
+op mul off dsb 2
+op add @counter @counter off
+set ds ds1
+set @counter callback
+set ds ds2
+set @counter callback
+set ds ds3
+set @counter callback
+set ds ds4
+set @counter callback
+writereg:
+op equal fsru reg 0
+jump fsruntwr equal fsru 0
+set addr fsr
+jump fsrundwr always
+fsruntwr:
+set addr reg
+fsrundwr:
+jump writemem always
+writemem:
+jump writeunimpl equal addr 0
+jump writeunimpl equal addr 1
+jump writeunimpl equal addr 5
+jump writeunimpl equal addr 7
+jump notpclwrite notEqual addr 2
+op sub pc val 1
+set @counter callback
+notpclwrite:
+jump notstatuswrite notEqual addr 3
+jump statuswriteal equal alock 1
+op and c val 1
+op shr dc val 1
+op and dc dc 1
+op shr z val 2
+op and z z 1
+op shr gpwuf val 7
+op and gpwuf gpwuf 1
+set @counter callback
+statuswriteal:
+op shr gpwuf val 7
+op and gpwuf gpwuf 1
+set @counter callback
+notstatuswrite:
+jump notfsrwrite notEqual addr 4
+op and fsr val 0x1f
+set @counter callback
+notfsrwrite:
+jump notgpiowrite notEqual addr 6
+op and gpio val 0x7
+notgpiowrite:
+op sub i addr 8
+jump writeunimpl lessThan i 0
+op idiv dsb i 6
+set bcallback callback
+op add callback @counter 1
+jump readgen always
+op mod wrd i 6
+op mul shift wrd 8
+op shl negmask 0xff shift
+op xor negmask negmask 0xffffffffffff
+op and ds ds negmask
+op shl wds val shift
+op or ds ds wds
+op add callback @counter 1
+jump writegen always
+set callback bcallback
+set @counter callback
+writeunimpl:
+set @counter callback
+writegen:
+op mul off dsb 2
+op add @counter @counter off
+set ds1 ds
+set @counter callback
+set ds2 ds
+set @counter callback
+set ds3 ds
+set @counter callback
+set ds4 ds
+set @counter callback
+instrsobtained:
+op and shft pc 0b11
+op mul shft shft 12
+op shr instr instr shft
+op and instr instr 0xfff
+set @counter callback
+fetchinstrs:
+op shr _i pc 2
+op mul _off _i 2
+op add @counter @counter _off
+#put generated rom here
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+nop#rom
+set instr 0
+jump instrsobtained always
+set author "6f6626"
+set editor1 ""
+set editor2 ""
+set editor3 ""
+set license "GPLv3"
+set licenselink "https://www.gnu.org/licenses/gpl-3.0.en.html"
+set sourcecodelink "https://github.com/camelStyleUser/pic10c202"
+set purpose "pic10c202 emulates a subset of pic10f202 instructions"
+set copyright "Copyright(C) 2025 6f6626"

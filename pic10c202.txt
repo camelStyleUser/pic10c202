@@ -80,7 +80,7 @@ jump mloop always
 instrexec:
 op and litr instr 0xff
 op and reg instr 0x1f
-op and d 0x20
+op and d instr 0x20
 jump goto equal top 0b1010
 jump goto equal top 0b1011
 jump bcf equal top 0b0100
